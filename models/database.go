@@ -5,21 +5,17 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/TheoRev/apirest_go/config"
 	// Driver de mysql
 	_ "github.com/go-sql-driver/mysql"
 )
 
 var db *sql.DB
 
-const username string = "theo"
-const password string = "ambu"
-const host string = "localhost"
-const port int = 3308
-const database string = "project_go_web"
-
 // CreateConnection establece la coneccion con mysql
 func CreateConnection() {
-	connection, err := sql.Open("mysql", generateURL())
+	url := config.GetUrlDatabase()
+	connection, err := sql.Open("mysql", url)
 	if err != nil {
 		panic(err)
 	} else {
@@ -38,10 +34,14 @@ func createTable(tableName, schema string) {
 	if !existsTable(tableName) {
 		Exec(schema)
 	}
+	// else {
+	// 	truncateTable(tableName)
+	// }
 }
 
-func truncateTable(tableTable) {
-
+func truncateTable(tableName string) {
+	sql := fmt.Sprintf("TRUNCATE %s", tableName)
+	Exec(sql)
 }
 
 // Exec overwrite function
@@ -79,8 +79,4 @@ func Ping() {
 	if err := db.Ping(); err != nil {
 		panic(err)
 	}
-}
-
-func generateURL() string {
-	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", username, password, host, port, database)
 }
