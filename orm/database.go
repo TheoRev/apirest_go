@@ -27,3 +27,9 @@ func CreateConnection() {
 func CloseConnection() {
 	db.Close()
 }
+
+// CreateTables crea tablas segun estructuras
+func CreateTables() {
+	db.DropTableIfExists(&User{})
+	db.CreateTable(&User{})
+}

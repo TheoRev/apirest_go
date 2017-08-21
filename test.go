@@ -13,6 +13,18 @@ func main() {
 
 func testOrm()  {
 	orm.CreateConnection()
+	orm.CreateTables()
+	user := orm.NewUser("Almendra", "8773", "almindra12@gmail.com")
+	user.Save()
+	// fmt.Println(user)
+	users := orm.GetUsers()
+	fmt.Println(users)
+	user = orm.GetUser(1)
+	user.Username = "Almendra Cárdenas Mesa"
+	user.Password = "878"
+	user.Update()
+	fmt.Println(user)
+	user.Delete()
 	orm.CloseConnection()
 }
 
