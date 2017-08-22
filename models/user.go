@@ -11,7 +11,7 @@ type User struct {
 // UserSchema esquema de tabla de la db
 const userSchema string = `create table users(
 								id int(6)unsigned primary key auto_increment,
-								username varchar(30) not null,
+								username varchar(30) not null UNIQUE,
 								password varchar(64)not null,
 								email varchar(40),
 								created_date timestamp default current_timestamp
@@ -27,31 +27,33 @@ func NewUser(username, password, email string) *User {
 }
 
 // CreateUser crea un usuario en la db
-func CreateUser(username, password, email string) *User {
+func CreateUser(username, password, email string) (*User, error) {
 	user := NewUser(username, password, email)
-	user.Save()
-	return user
+	err := user.Save()
+	return user, err
 }
 
 // Save guarda un usuario en la db
-func (this *User) Save() {
+func (this *User) Save() error {
 	if this.Id == 0 {
-		this.insert()
+		return this.insert()
 	} else {
-		this.update()
+		return this.update()
 	}
 }
 
-func (this *User) insert() {
+func (this *User) insert() error {
 	sql := "INSERT users SET username=?, password=?, email=?"
-	result, _ := Exec(sql, this.Username, this.Password, this.Email)
-	this.Id, _ = result.LastInsertId()
+	id, err := InsertData(sql, this.Username, this.Password, this.Email)
+	this.Id = id
+	return err
 }
 
-func (this *User) update() {
+func (this *User) update() error {
 	sql := "UPDATE users SET username=?, password=?, email=?"
-	result, _ := Exec(sql, this.Username, this.Password, this.Email)
-	this.Id, _ = result.RowsAffected()
+	result, err := Exec(sql, this.Username, this.Password, this.Email)
+	this.Id, err = result.RowsAffected()
+	return err
 }
 
 func (this *User) Delete() {

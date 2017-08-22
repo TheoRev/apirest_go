@@ -11,9 +11,19 @@ import (
 )
 
 var db *sql.DB
+var debug bool
+
+func init() {
+	CreateConnection()
+	debug = config.GetDebug()
+}
 
 // CreateConnection establece la coneccion con mysql
 func CreateConnection() {
+	if GetConnection() != nil {
+		return
+	}
+
 	url := config.GetUrlDatabase()
 	connection, err := sql.Open("mysql", url)
 	if err != nil {
@@ -37,6 +47,15 @@ func createTable(tableName, schema string) {
 	// else {
 	// 	truncateTable(tableName)
 	// }
+}
+
+func InsertData(query string, args ...interface{}) (int64, error) {
+	if result, err := Exec(query, args...); err != nil {
+		return int64(0), err
+	} else {
+		id, err := result.LastInsertId()
+		return id, err
+	}
 }
 
 func truncateTable(tableName string) {
@@ -79,4 +98,9 @@ func Ping() {
 	if err := db.Ping(); err != nil {
 		panic(err)
 	}
+}
+
+// GetConnection se obtiene la conexion
+func GetConnection() *sql.DB {
+	return db
 }

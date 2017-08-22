@@ -6,3 +6,7 @@
 *.out
 .vscode
 .vscode/
+
+#tests
+*.test
+test/*.test
