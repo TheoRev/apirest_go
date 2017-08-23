@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -25,13 +26,16 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 
 // CreateUser Se crea un usuario
 func CreateUser(w http.ResponseWriter, r *http.Request) {
-	user := models.User{}
+	user := &models.User{}
 	decoder := json.NewDecoder(r.Body)
 
 	if err := decoder.Decode(&user); err != nil {
 		models.SendUnprocessableEntity(w)
-	} else {
-		models.SendData(w, models.SaveUser(user))
+	} 
+
+	if err:= user.Valid() != nil {
+		models.SendUnprocessableEntity(w)
+		return
 	}
 }
 
@@ -68,10 +72,11 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 func getUserByRequest(r *http.Request) (models.User, error) {
 	vars := mux.Vars(r)
 	userId, _ := strconv.Atoi(vars["id"])
+	user := models.GetUserById(userId)
 
-	if user, err := models.GetUser(userId); err != nil {
-		return user, err
-	} else {
-		return user, nil
+	if user.Id == 0 {
+		return user, errors.New("El usuario no existe en la base de datos.")
 	}
+
+	return user, nil
 }
