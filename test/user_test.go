@@ -37,7 +37,7 @@ func TestUniqueUsername(t *testing.T) {
 }
 
 func TestGetUser(t *testing.T) {
-	user := models.GetUser(1)
+	user := models.GetUserById(1)
 	if user.Username != "Theo" || user.Password != "123" || user.Email != "theorev@gmail.com" {
 		t.Error("No es posible obtener el usuario", nil)
 	}
@@ -52,4 +52,18 @@ func TestGetUsers(t *testing.T) {
 
 func TestDeleteUser(t *testing.T) {
 
+}
+
+func TestPassword(t *testing.T) {
+	user := models.NewUser("Marco", "0331", "marko@gmail.com")
+	user.Save()
+	if user.Password == "0331" || len(user.Password) != 60 {
+		t.Error("No es posible cifrar el password")
+	}
+}
+
+func TestLogin(t *testing.T) {
+	if valid := models.Login("Marco", "0331"); !valid {
+		t.Error("No es posible realizar el Login")
+	}
 }

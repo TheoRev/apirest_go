@@ -1,5 +1,11 @@
 package models
 
+import (
+	"regexp"
+
+	"golang.org/x/crypto/bcrypt"
+)
+
 // User model
 type User struct {
 	Id       int64  `json:"id"`
@@ -7,6 +13,8 @@ type User struct {
 	Password string `json:"password"`
 	Email    string `json:"email"`
 }
+
+var emailRegexp = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 
 // UserSchema esquema de tabla de la db
 const userSchema string = `create table users(
@@ -22,7 +30,8 @@ type Users []User
 
 // NewUser constructor del paquete models
 func NewUser(username, password, email string) *User {
-	user := &User{Username: username, Password: password, Email: email}
+	user := &User{Username: username, Email: email}
+	user.SetPassword(password)
 	return user
 }
 
@@ -62,10 +71,13 @@ func (this *User) Delete() {
 	this.Id, _ = result.RowsAffected()
 }
 
-func GetUser(id int) *User {
-	user := NewUser("", "", "")
-	sql := "SELECT id, username, password, email FROM users WHERE id=?"
-	rows, _ := Query(sql, id)
+func GetUser(sql string, conditional interface{}) *User {
+	user := &User{}
+	rows, err := Query(sql, conditional)
+	if err != nil {
+		return user
+	}
+
 	for rows.Next() {
 		rows.Scan(&user.Id, &user.Username, &user.Password, &user.Email)
 	}
@@ -82,4 +94,29 @@ func GetUsers() Users {
 		users = append(users, user)
 	}
 	return users
+}
+
+func (this *User) SetPassword(password string) {
+	hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	this.Password = string(hash)
+}
+
+func Login(username, password string) bool {
+	user := GetUserByUsername(username)
+	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	return err == nil
+}
+
+func GetUserByUsername(username string) *User {
+	sql := "SELECT id, username, password, email FROM users WHERE username=?"
+	return GetUser(sql, username)
+}
+
+func ValidEmail(email string) bool {
+	return emailRegexp.MatchString(email)
+}
+
+func GetUserById(id int) *User {
+	sql := "SELECT id, username, password, email FROM users WHERE id=?"
+	return GetUser(sql, id)
 }
