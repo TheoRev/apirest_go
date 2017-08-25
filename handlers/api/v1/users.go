@@ -1,4 +1,4 @@
-package handlers
+package v1
 
 import (
 	"encoding/json"
@@ -6,16 +6,14 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/TheoRev/go_web/rest/models"
+	"github.com/TheoRev/apirest_go/models"
 	"github.com/gorilla/mux"
 )
 
-// GetUsers Se obtiene todos los usuarios
 func GetUsers(w http.ResponseWriter, r *http.Request) {
 	models.SendData(w, models.GetUsers())
 }
 
-// GetUser Se obtiene un usuario
 func GetUser(w http.ResponseWriter, r *http.Request) {
 	if user, err := getUserByRequest(r); err != nil {
 		models.SendNotFound(w)
@@ -24,22 +22,28 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// CreateUser Se crea un usuario
 func CreateUser(w http.ResponseWriter, r *http.Request) {
 	user := &models.User{}
 	decoder := json.NewDecoder(r.Body)
 
 	if err := decoder.Decode(&user); err != nil {
 		models.SendUnprocessableEntity(w)
-	} 
+		return
+	}
 
-	if err:= user.Valid() != nil {
+	if err := user.Valid(); err != nil {
 		models.SendUnprocessableEntity(w)
 		return
 	}
+
+	user.SetPassword(user.Password)
+	if err := user.Save(); err != nil {
+		models.SendUnprocessableEntity(w)
+		return
+	}
+	models.SendData(w, user)
 }
 
-// UpdateUser Se actualiza un usuario
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	user, err := getUserByRequest(r)
 	if err != nil {
@@ -47,29 +51,40 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userResponse := models.User{}
+	request := &models.User{}
 	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&userResponse); err != nil {
+
+	if err := decoder.Decode(request); err != nil {
 		models.SendUnprocessableEntity(w)
 		return
 	}
-	user = models.UpdateUser(user, userResponse.Username, userResponse.Password)
+
+	if err := user.Valid(); err != nil {
+		models.SendUnprocessableEntity(w)
+		return
+	}
+
+	user.Username = request.Username
+	user.Email = request.Email
+	user.SetPassword(request.Password)
+
+	if err := user.Save(); err != nil {
+		models.SendUnprocessableEntity(w)
+		return
+	}
 	models.SendData(w, user)
 }
 
-// DeleteUser Se elimina un usuario
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
-	user, err := getUserByRequest(r)
-	if err != nil {
+	if user, err := getUserByRequest(r); err != nil {
 		models.SendNotFound(w)
-		return
 	} else {
-		models.DeleteUser(user.Id)
+		user.Delete()
 		models.SendNoContent(w)
 	}
 }
 
-func getUserByRequest(r *http.Request) (models.User, error) {
+func getUserByRequest(r *http.Request) (*models.User, error) {
 	vars := mux.Vars(r)
 	userId, _ := strconv.Atoi(vars["id"])
 	user := models.GetUserById(userId)
@@ -77,6 +92,5 @@ func getUserByRequest(r *http.Request) (models.User, error) {
 	if user.Id == 0 {
 		return user, errors.New("El usuario no existe en la base de datos.")
 	}
-
 	return user, nil
 }

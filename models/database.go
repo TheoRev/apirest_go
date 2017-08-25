@@ -15,7 +15,7 @@ var debug bool
 
 func init() {
 	CreateConnection()
-	debug = config.GetDebug()
+	debug = config.Debug()
 }
 
 // CreateConnection establece la coneccion con mysql
